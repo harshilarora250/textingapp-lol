@@ -86,6 +86,12 @@
             box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
         }
 
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
         .btn-secondary {
             background: #f0f0f0;
             color: #333;
@@ -280,6 +286,15 @@
             padding: 20px;
             color: #667eea;
         }
+
+        .info {
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
@@ -292,6 +307,7 @@
         <div class="content">
             <!-- Home View -->
             <div id="homeView" class="view active">
+                <div id="loadingInfo" class="info" style="display: none;">Connecting to Firebase...</div>
                 <div class="btn-group">
                     <button class="btn btn-primary" onclick="showView('createView')">Create Chat</button>
                     <button class="btn btn-secondary" onclick="showView('joinView')">Join Chat</button>
@@ -314,7 +330,7 @@
                     <input type="password" id="chatPassword" placeholder="Enter password">
                 </div>
                 <div id="createError" class="error" style="display: none;"></div>
-                <button class="btn btn-primary" style="width: 100%; margin-bottom: 10px;" onclick="createChat()">Create Chat Room</button>
+                <button class="btn btn-primary" id="createBtn" style="width: 100%; margin-bottom: 10px;" onclick="createChat()">Create Chat Room</button>
                 <button class="btn btn-secondary" style="width: 100%;" onclick="showView('homeView')">Back</button>
             </div>
 
@@ -367,10 +383,12 @@
         </div>
     </div>
 
-    <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, set, push, onValue, onChildAdded, get, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, set, push, onChildAdded, get, serverTimestamp, off } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        // Show loading
+        document.getElementById('loadingInfo').style.display = 'block';
 
         // Firebase configuration
         const firebaseConfig = {
@@ -383,27 +401,38 @@
             databaseURL: "https://chatfriends-lol-default-rtdb.firebaseio.com"
         };
 
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const database = getDatabase(app);
+        try {
+            // Initialize Firebase
+            const app = initializeApp(firebaseConfig);
+            const database = getDatabase(app);
 
-        // Make Firebase available globally
-        window.db = database;
-        window.dbRef = ref;
-        window.dbSet = set;
-        window.dbPush = push;
-        window.dbOnValue = onValue;
-        window.dbOnChildAdded = onChildAdded;
-        window.dbGet = get;
-        window.dbServerTimestamp = serverTimestamp;
+            // Make Firebase available globally
+            window.firebase = {
+                db: database,
+                ref: ref,
+                set: set,
+                push: push,
+                onChildAdded: onChildAdded,
+                get: get,
+                serverTimestamp: serverTimestamp,
+                off: off
+            };
 
-        console.log("Firebase initialized successfully!");
+            console.log("Firebase initialized successfully!");
+            document.getElementById('loadingInfo').style.display = 'none';
+            
+        } catch (error) {
+            console.error("Firebase initialization error:", error);
+            document.getElementById('loadingInfo').textContent = 'Error connecting to Firebase. Please refresh the page.';
+            document.getElementById('loadingInfo').className = 'error';
+        }
     </script>
 
     <script>
         let currentRoom = null;
         let currentUsername = null;
         let messageListener = null;
+        let messagesRef = null;
 
         function showView(viewId) {
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
@@ -435,13 +464,23 @@
                 return;
             }
 
+            // Check if Firebase is loaded
+            if (!window.firebase) {
+                showError('createError', 'Firebase is not loaded. Please refresh the page.');
+                return;
+            }
+
+            const btn = document.getElementById('createBtn');
+            btn.disabled = true;
+            btn.textContent = 'Creating...';
+
             try {
                 const code = generateCode();
-                const roomRef = window.dbRef(window.db, `rooms/${code}`);
+                const roomRef = window.firebase.ref(window.firebase.db, `rooms/${code}`);
                 
-                await window.dbSet(roomRef, {
+                await window.firebase.set(roomRef, {
                     password: usePass ? password : null,
-                    createdAt: window.dbServerTimestamp(),
+                    createdAt: Date.now(),
                     creator: username
                 });
 
@@ -451,20 +490,25 @@
                 document.getElementById('displayCode').textContent = code;
                 document.getElementById('passwordLabel').style.display = usePass ? 'block' : 'none';
                 
+                btn.disabled = false;
+                btn.textContent = 'Create Chat Room';
                 showView('createdView');
+                
             } catch (error) {
                 console.error("Error creating chat:", error);
-                showError('createError', 'Failed to create chat room. Please try again.');
+                showError('createError', 'Failed to create chat room: ' + error.message);
+                btn.disabled = false;
+                btn.textContent = 'Create Chat Room';
             }
         }
 
         async function enterChatAsCreator() {
             try {
-                const messagesRef = window.dbRef(window.db, `rooms/${currentRoom}/messages`);
-                await window.dbPush(messagesRef, {
+                messagesRef = window.firebase.ref(window.firebase.db, `rooms/${currentRoom}/messages`);
+                await window.firebase.push(messagesRef, {
                     username: 'System',
                     text: `${currentUsername} created the room`,
-                    timestamp: window.dbServerTimestamp()
+                    timestamp: Date.now()
                 });
 
                 document.getElementById('roomCode').textContent = currentRoom;
@@ -472,6 +516,7 @@
                 showView('chatView');
             } catch (error) {
                 console.error("Error entering chat:", error);
+                alert('Failed to enter chat: ' + error.message);
             }
         }
 
@@ -490,9 +535,14 @@
                 return;
             }
 
+            if (!window.firebase) {
+                showError('joinError', 'Firebase is not loaded. Please refresh the page.');
+                return;
+            }
+
             try {
-                const roomRef = window.dbRef(window.db, `rooms/${code}`);
-                const snapshot = await window.dbGet(roomRef);
+                const roomRef = window.firebase.ref(window.firebase.db, `rooms/${code}`);
+                const snapshot = await window.firebase.get(roomRef);
 
                 if (!snapshot.exists()) {
                     showError('joinError', 'Invalid chat code');
@@ -509,30 +559,33 @@
                 currentRoom = code;
                 currentUsername = username;
 
-                const messagesRef = window.dbRef(window.db, `rooms/${code}/messages`);
-                await window.dbPush(messagesRef, {
+                messagesRef = window.firebase.ref(window.firebase.db, `rooms/${code}/messages`);
+                await window.firebase.push(messagesRef, {
                     username: 'System',
                     text: `${username} joined the room`,
-                    timestamp: window.dbServerTimestamp()
+                    timestamp: Date.now()
                 });
 
                 document.getElementById('roomCode').textContent = code;
                 setupMessageListener();
                 showView('chatView');
+                
             } catch (error) {
                 console.error("Error joining chat:", error);
-                showError('joinError', 'Failed to join chat room. Please try again.');
+                showError('joinError', 'Failed to join chat room: ' + error.message);
             }
         }
 
         function setupMessageListener() {
-            const messagesRef = window.dbRef(window.db, `rooms/${currentRoom}/messages`);
+            if (!messagesRef) {
+                messagesRef = window.firebase.ref(window.firebase.db, `rooms/${currentRoom}/messages`);
+            }
             
             // Clear existing messages
             document.getElementById('messages').innerHTML = '';
             
             // Listen for new messages
-            messageListener = window.dbOnChildAdded(messagesRef, (snapshot) => {
+            messageListener = window.firebase.onChildAdded(messagesRef, (snapshot) => {
                 const message = snapshot.val();
                 if (message.username !== 'System') {
                     displayMessage(message, message.username === currentUsername);
@@ -547,16 +600,20 @@
             if (!text) return;
 
             try {
-                const messagesRef = window.dbRef(window.db, `rooms/${currentRoom}/messages`);
-                await window.dbPush(messagesRef, {
+                if (!messagesRef) {
+                    messagesRef = window.firebase.ref(window.firebase.db, `rooms/${currentRoom}/messages`);
+                }
+                
+                await window.firebase.push(messagesRef, {
                     username: currentUsername,
                     text: text,
-                    timestamp: window.dbServerTimestamp()
+                    timestamp: Date.now()
                 });
 
                 input.value = '';
             } catch (error) {
                 console.error("Error sending message:", error);
+                alert('Failed to send message: ' + error.message);
             }
         }
 
@@ -585,19 +642,18 @@
         }
 
         async function leaveChat() {
-            if (messageListener) {
-                // Note: In a real app, you'd want to properly unsubscribe
-                messageListener = null;
-            }
-
             try {
-                if (currentRoom && currentUsername) {
-                    const messagesRef = window.dbRef(window.db, `rooms/${currentRoom}/messages`);
-                    await window.dbPush(messagesRef, {
+                if (currentRoom && currentUsername && messagesRef) {
+                    await window.firebase.push(messagesRef, {
                         username: 'System',
                         text: `${currentUsername} left the room`,
-                        timestamp: window.dbServerTimestamp()
+                        timestamp: Date.now()
                     });
+                }
+
+                // Unsubscribe from message listener
+                if (messagesRef && messageListener) {
+                    window.firebase.off(messagesRef);
                 }
             } catch (error) {
                 console.error("Error leaving chat:", error);
@@ -605,6 +661,8 @@
 
             currentRoom = null;
             currentUsername = null;
+            messageListener = null;
+            messagesRef = null;
             document.getElementById('messages').innerHTML = '';
             document.getElementById('messageInput').value = '';
             showView('homeView');
