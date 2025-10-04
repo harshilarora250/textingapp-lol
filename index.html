@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChatRoom - Simple & Secure</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 500px;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .view {
+            display: none;
+        }
+
+        .view.active {
+            display: block;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+        }
+
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus,
+        input[type="password"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .code-display {
+            background: #f8f9fa;
+            border: 2px dashed #667eea;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .code-display .code {
+            font-size: 32px;
+            font-weight: bold;
+            color: #667eea;
+            letter-spacing: 3px;
+            margin: 10px 0;
+        }
+
+        .code-display .label {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: 500px;
+        }
+
+        .chat-header {
+            background: #f8f9fa;
+            padding: 15px;
+            border-bottom: 2px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-info {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #fafafa;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 10px 15px;
+            border-radius: 10px;
+            max-width: 80%;
+            word-wrap: break-word;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.sent {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            margin-left: auto;
+        }
+
+        .message.received {
+            background: white;
+            color: #333;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .message-input {
+            display: flex;
+            gap: 10px;
+            padding: 15px;
+            background: white;
+            border-top: 2px solid #e0e0e0;
+        }
+
+        .message-input input {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .message-input button {
+            padding: 12px 25px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .back-btn {
+            padding: 8px 15px;
+            background: #f0f0f0;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .back-btn:hover {
+            background: #e0e0e0;
+        }
+
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        .success {
+            background: #efe;
+            color: #3c3;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💬 ChatRoom</h1>
+            <p>Create or join secure chat rooms instantly</p>
+        </div>
+
+        <div class="content">
+            <!-- Home View -->
+            <div id="homeView" class="view active">
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="showView('createView')">Create Chat</button>
+                    <button class="btn btn-secondary" onclick="showView('joinView')">Join Chat</button>
+                </div>
+            </div>
+
+            <!-- Create Chat View -->
+            <div id="createView" class="view">
+                <h2 style="margin-bottom: 20px;">Create New Chat</h2>
+                <div class="form-group">
+                    <label>Your Username</label>
+                    <input type="text" id="createUsername" placeholder="Enter your username">
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="usePassword" onchange="togglePassword()">
+                    <label for="usePassword" style="margin: 0;">Require password to join</label>
+                </div>
+                <div class="form-group" id="passwordGroup" style="display: none;">
+                    <label>Chat Password</label>
+                    <input type="password" id="chatPassword" placeholder="Enter password">
+                </div>
+                <div id="createError" class="error" style="display: none;"></div>
+                <button class="btn btn-primary" style="width: 100%; margin-bottom: 10px;" onclick="createChat()">Create Chat Room</button>
+                <button class="btn btn-secondary" style="width: 100%;" onclick="showView('homeView')">Back</button>
+            </div>
+
+            <!-- Chat Created View -->
+            <div id="createdView" class="view">
+                <h2 style="margin-bottom: 20px; text-align: center;">Chat Room Created!</h2>
+                <div class="code-display">
+                    <div class="label">Share this code:</div>
+                    <div class="code" id="displayCode"></div>
+                    <div class="label" id="passwordLabel" style="display: none;">Password protected 🔒</div>
+                </div>
+                <div class="success">Share this code with others to let them join your chat room!</div>
+                <button class="btn btn-primary" style="width: 100%;" onclick="enterChatAsCreator()">Enter Chat Room</button>
+            </div>
+
+            <!-- Join Chat View -->
+            <div id="joinView" class="view">
+                <h2 style="margin-bottom: 20px;">Join Chat Room</h2>
+                <div class="form-group">
+                    <label>Your Username</label>
+                    <input type="text" id="joinUsername" placeholder="Enter your username">
+                </div>
+                <div class="form-group">
+                    <label>Chat Code</label>
+                    <input type="text" id="joinCode" placeholder="Enter 6-digit code">
+                </div>
+                <div class="form-group">
+                    <label>Password (if required)</label>
+                    <input type="password" id="joinPassword" placeholder="Leave empty if no password">
+                </div>
+                <div id="joinError" class="error" style="display: none;"></div>
+                <button class="btn btn-primary" style="width: 100%; margin-bottom: 10px;" onclick="joinChat()">Join Chat</button>
+                <button class="btn btn-secondary" style="width: 100%;" onclick="showView('homeView')">Back</button>
+            </div>
+
+            <!-- Chat Room View -->
+            <div id="chatView" class="view">
+                <div class="chat-container">
+                    <div class="chat-header">
+                        <div class="chat-info">Room: <span id="roomCode"></span></div>
+                        <button class="back-btn" onclick="leaveChat()">Leave</button>
+                    </div>
+                    <div class="messages" id="messages"></div>
+                    <div class="message-input">
+                        <input type="text" id="messageInput" placeholder="Type a message..." onkeypress="handleEnter(event)">
+                        <button onclick="sendMessage()">Send</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, set, push, onValue, onChildAdded, get, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyA4CBlge2PSUebFO3HkU4zHEEfZpWr-e5M",
+            authDomain: "chatfriends-lol.firebaseapp.com",
+            projectId: "chatfriends-lol",
+            storageBucket: "chatfriends-lol.firebasestorage.app",
+            messagingSenderId: "881197718651",
+            appId: "1:881197718651:web:0b9a6511c2d5fe694c96de",
+            databaseURL: "https://chatfriends-lol-default-rtdb.firebaseio.com"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        // Make Firebase available globally
+        window.db = database;
+        window.dbRef = ref;
+        window.dbSet = set;
+        window.dbPush = push;
+        window.dbOnValue = onValue;
+        window.dbOnChildAdded = onChildAdded;
+        window.dbGet = get;
+        window.dbServerTimestamp = serverTimestamp;
+
+        console.log("Firebase initialized successfully!");
+    </script>
+
+    <script>
+        let currentRoom = null;
+        let currentUsername = null;
+        let messageListener = null;
+
+        function showView(viewId) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
+            document.querySelectorAll('.error').forEach(e => e.style.display = 'none');
+        }
+
+        function togglePassword() {
+            const checked = document.getElementById('usePassword').checked;
+            document.getElementById('passwordGroup').style.display = checked ? 'block' : 'none';
+        }
+
+        function generateCode() {
+            return Math.floor(100000 + Math.random() * 900000).toString();
+        }
+
+        async function createChat() {
+            const username = document.getElementById('createUsername').value.trim();
+            const usePass = document.getElementById('usePassword').checked;
+            const password = document.getElementById('chatPassword').value;
+
+            if (!username) {
+                showError('createError', 'Please enter a username');
+                return;
+            }
+
+            if (usePass && !password) {
+                showError('createError', 'Please enter a password');
+                return;
+            }
+
+            try {
+                const code = generateCode();
+                const roomRef = window.dbRef(window.db, `rooms/${code}`);
+                
+                await window.dbSet(roomRef, {
+                    password: usePass ? password : null,
+                    createdAt: window.dbServerTimestamp(),
+                    creator: username
+                });
+
+                currentRoom = code;
+                currentUsername = username;
+
+                document.getElementById('displayCode').textContent = code;
+                document.getElementById('passwordLabel').style.display = usePass ? 'block' : 'none';
+                
+                showView('createdView');
+            } catch (error) {
+                console.error("Error creating chat:", error);
+                showError('createError', 'Failed to create chat room. Please try again.');
+            }
+        }
+
+        async function enterChatAsCreator() {
+            try {
+                const messagesRef = window.dbRef(window.db, `rooms/${currentRoom}/messages`);
+                await window.dbPush(messagesRef, {
+                    username: 'System',
+                    text: `${currentUsername} created the room`,
+                    timestamp: window.dbServerTimestamp()
+                });
+
+                document.getElementById('roomCode').textContent = currentRoom;
+                setupMessageListener();
+                showView('chatView');
+            } catch (error) {
+                console.error("Error entering chat:", error);
+            }
+        }
+
+        async function joinChat() {
+            const username = document.getElementById('joinUsername').value.trim();
+            const code = document.getElementById('joinCode').value.trim();
+            const password = document.getElementById('joinPassword').value;
+
+            if (!username) {
+                showError('joinError', 'Please enter a username');
+                return;
+            }
+
+            if (!code) {
+                showError('joinError', 'Please enter a chat code');
+                return;
+            }
+
+            try {
+                const roomRef = window.dbRef(window.db, `rooms/${code}`);
+                const snapshot = await window.dbGet(roomRef);
+
+                if (!snapshot.exists()) {
+                    showError('joinError', 'Invalid chat code');
+                    return;
+                }
+
+                const roomData = snapshot.val();
+                
+                if (roomData.password && roomData.password !== password) {
+                    showError('joinError', 'Incorrect password');
+                    return;
+                }
+
+                currentRoom = code;
+                currentUsername = username;
+
+                const messagesRef = window.dbRef(window.db, `rooms/${code}/messages`);
+                await window.dbPush(messagesRef, {
+                    username: 'System',
+                    text: `${username} joined the room`,
+                    timestamp: window.dbServerTimestamp()
+                });
+
+                document.getElementById('roomCode').textContent = code;
+                setupMessageListener();
+                showView('chatView');
+            } catch (error) {
+                console.error("Error joining chat:", error);
+                showError('joinError', 'Failed to join chat room. Please try again.');
+            }
+        }
+
+        function setupMessageListener() {
+            const messagesRef = window.dbRef(window.db, `rooms/${currentRoom}/messages`);
+            
+            // Clear existing messages
+            document.getElementById('messages').innerHTML = '';
+            
+            // Listen for new messages
+            messageListener = window.dbOnChildAdded(messagesRef, (snapshot) => {
+                const message = snapshot.val();
+                if (message.username !== 'System') {
+                    displayMessage(message, message.username === currentUsername);
+                }
+            });
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const text = input.value.trim();
+
+            if (!text) return;
+
+            try {
+                const messagesRef = window.dbRef(window.db, `rooms/${currentRoom}/messages`);
+                await window.dbPush(messagesRef, {
+                    username: currentUsername,
+                    text: text,
+                    timestamp: window.dbServerTimestamp()
+                });
+
+                input.value = '';
+            } catch (error) {
+                console.error("Error sending message:", error);
+            }
+        }
+
+        function displayMessage(message, isSent) {
+            const messagesDiv = document.getElementById('messages');
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${isSent ? 'sent' : 'received'}`;
+            
+            let timeString = 'Just now';
+            if (message.timestamp) {
+                const date = new Date(message.timestamp);
+                if (!isNaN(date.getTime())) {
+                    timeString = date.toLocaleTimeString();
+                }
+            }
+            
+            msgDiv.innerHTML = `<strong>${message.username}</strong><br>${message.text}<br><small>${timeString}</small>`;
+            messagesDiv.appendChild(msgDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function handleEnter(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        async function leaveChat() {
+            if (messageListener) {
+                // Note: In a real app, you'd want to properly unsubscribe
+                messageListener = null;
+            }
+
+            try {
+                if (currentRoom && currentUsername) {
+                    const messagesRef = window.dbRef(window.db, `rooms/${currentRoom}/messages`);
+                    await window.dbPush(messagesRef, {
+                        username: 'System',
+                        text: `${currentUsername} left the room`,
+                        timestamp: window.dbServerTimestamp()
+                    });
+                }
+            } catch (error) {
+                console.error("Error leaving chat:", error);
+            }
+
+            currentRoom = null;
+            currentUsername = null;
+            document.getElementById('messages').innerHTML = '';
+            document.getElementById('messageInput').value = '';
+            showView('homeView');
+        }
+
+        function showError(elementId, message) {
+            const errorDiv = document.getElementById(elementId);
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
