@@ -518,7 +518,9 @@
                 };
                 showDebug(`Room data: ${JSON.stringify(roomData)}`);
 
+                console.log("About to write to Firebase...");
                 await window.firebase.set(roomRef, roomData);
+                console.log("Write successful!");
                 showDebug("Room data saved to Firebase");
 
                 currentRoom = code;
@@ -535,8 +537,16 @@
                 
             } catch (error) {
                 console.error("Error creating chat:", error);
+                console.error("Error code:", error.code);
+                console.error("Error message:", error.message);
                 showDebug(`ERROR: ${error.message}`);
-                showError('createError', 'Failed to create chat room: ' + error.message);
+                showDebug(`ERROR CODE: ${error.code || 'none'}`);
+                
+                if (error.code === 'PERMISSION_DENIED') {
+                    showError('createError', 'Permission denied. Please check Firebase Database Rules. Go to Firebase Console → Realtime Database → Rules and set both read and write to true.');
+                } else {
+                    showError('createError', 'Failed to create chat room: ' + error.message);
+                }
                 btn.disabled = false;
                 btn.textContent = 'Create Chat Room';
             }
