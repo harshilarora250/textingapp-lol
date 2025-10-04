@@ -295,6 +295,16 @@
             margin-bottom: 15px;
             font-size: 14px;
         }
+
+        .debug {
+            background: #fff3cd;
+            color: #856404;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-size: 12px;
+            font-family: monospace;
+        }
     </style>
 </head>
 <body>
@@ -330,6 +340,7 @@
                     <input type="password" id="chatPassword" placeholder="Enter password">
                 </div>
                 <div id="createError" class="error" style="display: none;"></div>
+                <div id="createDebug" class="debug" style="display: none;"></div>
                 <button class="btn btn-primary" id="createBtn" style="width: 100%; margin-bottom: 10px;" onclick="createChat()">Create Chat Room</button>
                 <button class="btn btn-secondary" style="width: 100%;" onclick="showView('homeView')">Back</button>
             </div>
@@ -385,28 +396,28 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, set, push, onChildAdded, get, serverTimestamp, off } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, set, push, onChildAdded, get, off } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-        // Show loading
+        console.log("Starting Firebase initialization...");
         document.getElementById('loadingInfo').style.display = 'block';
 
-        // Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyA4CBlge2PSUebFO3HkU4zHEEfZpWr-e5M",
             authDomain: "chatfriends-lol.firebaseapp.com",
+            databaseURL: "https://chatfriends-lol-default-rtdb.firebaseio.com",
             projectId: "chatfriends-lol",
             storageBucket: "chatfriends-lol.firebasestorage.app",
             messagingSenderId: "881197718651",
-            appId: "1:881197718651:web:0b9a6511c2d5fe694c96de",
-            databaseURL: "https://chatfriends-lol-default-rtdb.firebaseio.com"
+            appId: "1:881197718651:web:0b9a6511c2d5fe694c96de"
         };
 
         try {
-            // Initialize Firebase
             const app = initializeApp(firebaseConfig);
+            console.log("Firebase app initialized");
+            
             const database = getDatabase(app);
+            console.log("Database instance created");
 
-            // Make Firebase available globally
             window.firebase = {
                 db: database,
                 ref: ref,
@@ -414,16 +425,19 @@
                 push: push,
                 onChildAdded: onChildAdded,
                 get: get,
-                serverTimestamp: serverTimestamp,
-                off: off
+                off: off,
+                initialized: true
             };
 
-            console.log("Firebase initialized successfully!");
-            document.getElementById('loadingInfo').style.display = 'none';
+            console.log("Firebase fully initialized and ready!");
+            document.getElementById('loadingInfo').textContent = '✓ Connected to Firebase';
+            setTimeout(() => {
+                document.getElementById('loadingInfo').style.display = 'none';
+            }, 2000);
             
         } catch (error) {
             console.error("Firebase initialization error:", error);
-            document.getElementById('loadingInfo').textContent = 'Error connecting to Firebase. Please refresh the page.';
+            document.getElementById('loadingInfo').textContent = 'Error: ' + error.message;
             document.getElementById('loadingInfo').className = 'error';
         }
     </script>
@@ -438,6 +452,7 @@
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
             document.getElementById(viewId).classList.add('active');
             document.querySelectorAll('.error').forEach(e => e.style.display = 'none');
+            document.getElementById('createDebug').style.display = 'none';
         }
 
         function togglePassword() {
@@ -449,10 +464,23 @@
             return Math.floor(100000 + Math.random() * 900000).toString();
         }
 
+        function showDebug(message) {
+            console.log("DEBUG:", message);
+            const debug = document.getElementById('createDebug');
+            debug.textContent += message + '\n';
+            debug.style.display = 'block';
+        }
+
         async function createChat() {
+            console.log("createChat function called");
+            showDebug("createChat started");
+            
             const username = document.getElementById('createUsername').value.trim();
             const usePass = document.getElementById('usePassword').checked;
             const password = document.getElementById('chatPassword').value;
+
+            showDebug(`Username: ${username}`);
+            showDebug(`Use password: ${usePass}`);
 
             if (!username) {
                 showError('createError', 'Please enter a username');
@@ -464,11 +492,13 @@
                 return;
             }
 
-            // Check if Firebase is loaded
-            if (!window.firebase) {
-                showError('createError', 'Firebase is not loaded. Please refresh the page.');
+            if (!window.firebase || !window.firebase.initialized) {
+                showError('createError', 'Firebase is not ready. Please wait a moment and try again.');
+                showDebug("Firebase not initialized");
                 return;
             }
+
+            showDebug("Firebase is ready");
 
             const btn = document.getElementById('createBtn');
             btn.disabled = true;
@@ -476,13 +506,20 @@
 
             try {
                 const code = generateCode();
-                const roomRef = window.firebase.ref(window.firebase.db, `rooms/${code}`);
+                showDebug(`Generated code: ${code}`);
                 
-                await window.firebase.set(roomRef, {
+                const roomRef = window.firebase.ref(window.firebase.db, `rooms/${code}`);
+                showDebug("Room reference created");
+                
+                const roomData = {
                     password: usePass ? password : null,
                     createdAt: Date.now(),
                     creator: username
-                });
+                };
+                showDebug(`Room data: ${JSON.stringify(roomData)}`);
+
+                await window.firebase.set(roomRef, roomData);
+                showDebug("Room data saved to Firebase");
 
                 currentRoom = code;
                 currentUsername = username;
@@ -492,10 +529,13 @@
                 
                 btn.disabled = false;
                 btn.textContent = 'Create Chat Room';
+                showDebug("Success! Moving to created view");
+                
                 showView('createdView');
                 
             } catch (error) {
                 console.error("Error creating chat:", error);
+                showDebug(`ERROR: ${error.message}`);
                 showError('createError', 'Failed to create chat room: ' + error.message);
                 btn.disabled = false;
                 btn.textContent = 'Create Chat Room';
@@ -535,8 +575,8 @@
                 return;
             }
 
-            if (!window.firebase) {
-                showError('joinError', 'Firebase is not loaded. Please refresh the page.');
+            if (!window.firebase || !window.firebase.initialized) {
+                showError('joinError', 'Firebase is not ready. Please wait a moment and try again.');
                 return;
             }
 
@@ -581,10 +621,8 @@
                 messagesRef = window.firebase.ref(window.firebase.db, `rooms/${currentRoom}/messages`);
             }
             
-            // Clear existing messages
             document.getElementById('messages').innerHTML = '';
             
-            // Listen for new messages
             messageListener = window.firebase.onChildAdded(messagesRef, (snapshot) => {
                 const message = snapshot.val();
                 if (message.username !== 'System') {
@@ -651,7 +689,6 @@
                     });
                 }
 
-                // Unsubscribe from message listener
                 if (messagesRef && messageListener) {
                     window.firebase.off(messagesRef);
                 }
