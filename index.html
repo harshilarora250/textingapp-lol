@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chatter - Chat!, Simple & Secure</title>
+    <title>ChatRoom - Simple & Secure</title>
     <link rel="icon" type="image/png" href="https://i.imgur.com/mSHbEmv.png">
     <style>
         * {
@@ -100,6 +100,15 @@
 
         .btn-secondary:hover {
             background: #e0e0e0;
+        }
+
+        .btn-tertiary {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .btn-tertiary:hover {
+            background: #bbdefb;
         }
 
         .form-group {
@@ -299,13 +308,69 @@
             margin-bottom: 15px;
             font-size: 14px;
         }
+
+        .recent-chats-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .recent-chat-item {
+            background: #f8f9fa;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid #e0e0e0;
+        }
+
+        .recent-chat-item:hover {
+            background: #e3f2fd;
+            border-color: #667eea;
+            transform: translateX(5px);
+        }
+
+        .recent-chat-code {
+            font-size: 20px;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .recent-chat-username {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .recent-chat-time {
+            font-size: 12px;
+            color: #999;
+            margin-top: 5px;
+        }
+
+        .recent-chat-locked {
+            display: inline-block;
+            margin-left: 10px;
+            color: #f57c00;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>💬 Chatter</h1>
-            <p>Create or join chat rooms instantly</p>
+            <h1>💬 ChatRoom</h1>
+            <p>Create or join secure chat rooms instantly</p>
         </div>
 
         <div class="content">
@@ -315,6 +380,14 @@
                     <button class="btn btn-primary" onclick="showView('createView')">Create Chat</button>
                     <button class="btn btn-secondary" onclick="showView('joinView')">Join Chat</button>
                 </div>
+                <button class="btn btn-tertiary" style="width: 100%;" onclick="showView('recentView')">📋 Recent Chats</button>
+            </div>
+
+            <!-- Recent Chats View -->
+            <div id="recentView" class="view">
+                <h2 style="margin-bottom: 20px;">Recent Chats</h2>
+                <div id="recentChatsList" class="recent-chats-list"></div>
+                <button class="btn btn-secondary" style="width: 100%; margin-top: 20px;" onclick="showView('homeView')">Back</button>
             </div>
 
             <!-- Create Chat View -->
@@ -406,13 +479,11 @@
             const app = initializeApp(firebaseConfig);
             const database = getDatabase(app);
 
-            // Test database connection
             const testRef = ref(database, '.info/connected');
             get(testRef).then(() => {
                 console.log("✓ Firebase connected successfully");
             }).catch(err => {
                 console.warn("Database connection test failed:", err);
-                document.getElementById('dbWarning').style.display = 'block';
             });
 
             window.firebase = {
@@ -432,8 +503,6 @@
             
         } catch (error) {
             console.error("Firebase error:", error);
-            document.getElementById('dbWarning').style.display = 'block';
-            document.getElementById('dbWarning').innerHTML = `<strong>Error:</strong> ${error.message}`;
         }
     </script>
 
@@ -442,10 +511,125 @@
         let currentUsername = null;
         let messageListenerRef = null;
 
+        // User data management
+        const USER_DATA_KEY = 'chatroom_user_data';
+        const RECENT_CHATS_KEY = 'chatroom_recent_chats';
+
+        function getUserData() {
+            const data = localStorage.getItem(USER_DATA_KEY);
+            return data ? JSON.parse(data) : { username: '', userId: generateUserId() };
+        }
+
+        function saveUserData(username) {
+            const userData = getUserData();
+            userData.username = username;
+            localStorage.setItem(USER_DATA_KEY, JSON.stringify(userData));
+        }
+
+        function generateUserId() {
+            return 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        function getRecentChats() {
+            const chats = localStorage.getItem(RECENT_CHATS_KEY);
+            return chats ? JSON.parse(chats) : [];
+        }
+
+        function saveRecentChat(code, username, hasPassword) {
+            const recentChats = getRecentChats();
+            
+            // Remove existing entry for this code
+            const filtered = recentChats.filter(chat => chat.code !== code);
+            
+            // Add new entry at the beginning
+            filtered.unshift({
+                code: code,
+                username: username,
+                hasPassword: hasPassword,
+                timestamp: Date.now()
+            });
+
+            // Keep only the last 10 chats
+            const limited = filtered.slice(0, 10);
+            
+            localStorage.setItem(RECENT_CHATS_KEY, JSON.stringify(limited));
+        }
+
+        function loadRecentChats() {
+            const recentChats = getRecentChats();
+            const container = document.getElementById('recentChatsList');
+            
+            if (recentChats.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📭</div>
+                        <p>No recent chats</p>
+                        <p style="font-size: 14px; margin-top: 10px;">Join or create a chat to see it here!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = '';
+            
+            recentChats.forEach(chat => {
+                const chatItem = document.createElement('div');
+                chatItem.className = 'recent-chat-item';
+                
+                const timeAgo = getTimeAgo(chat.timestamp);
+                const lockIcon = chat.hasPassword ? '<span class="recent-chat-locked">🔒</span>' : '';
+                
+                chatItem.innerHTML = `
+                    <div class="recent-chat-code">${chat.code}${lockIcon}</div>
+                    <div class="recent-chat-username">Username: ${chat.username}</div>
+                    <div class="recent-chat-time">${timeAgo}</div>
+                `;
+                
+                chatItem.onclick = () => rejoinChat(chat);
+                container.appendChild(chatItem);
+            });
+        }
+
+        function getTimeAgo(timestamp) {
+            const seconds = Math.floor((Date.now() - timestamp) / 1000);
+            
+            if (seconds < 60) return 'Just now';
+            if (seconds < 3600) return Math.floor(seconds / 60) + ' minutes ago';
+            if (seconds < 86400) return Math.floor(seconds / 3600) + ' hours ago';
+            if (seconds < 604800) return Math.floor(seconds / 86400) + ' days ago';
+            return new Date(timestamp).toLocaleDateString();
+        }
+
+        function rejoinChat(chat) {
+            document.getElementById('joinUsername').value = chat.username;
+            document.getElementById('joinCode').value = chat.code;
+            
+            if (chat.hasPassword) {
+                showView('joinView');
+                document.getElementById('joinPassword').focus();
+            } else {
+                // Auto-join if no password
+                showView('joinView');
+            }
+        }
+
+        // Pre-fill username if remembered
+        window.addEventListener('load', () => {
+            const userData = getUserData();
+            if (userData.username) {
+                document.getElementById('createUsername').value = userData.username;
+                document.getElementById('joinUsername').value = userData.username;
+            }
+        });
+
         function showView(viewId) {
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
             document.getElementById(viewId).classList.add('active');
             document.querySelectorAll('.error').forEach(e => e.style.display = 'none');
+            
+            if (viewId === 'recentView') {
+                loadRecentChats();
+            }
         }
 
         function togglePassword() {
@@ -491,7 +675,6 @@
                     creator: username
                 };
 
-                // Set with timeout
                 const timeoutPromise = new Promise((_, reject) => 
                     setTimeout(() => reject(new Error('Connection timeout. Please check Firebase Database setup.')), 10000)
                 );
@@ -503,6 +686,10 @@
 
                 currentRoom = code;
                 currentUsername = username;
+
+                // Save user data
+                saveUserData(username);
+                saveRecentChat(code, username, usePass);
 
                 document.getElementById('displayCode').textContent = code;
                 document.getElementById('passwordLabel').style.display = usePass ? 'block' : 'none';
@@ -599,6 +786,10 @@
 
                 currentRoom = code;
                 currentUsername = username;
+
+                // Save user data
+                saveUserData(username);
+                saveRecentChat(code, username, !!roomData.password);
 
                 const messagesRef = window.firebase.ref(window.firebase.db, `rooms/${code}/messages`);
                 await window.firebase.push(messagesRef, {
@@ -719,8 +910,6 @@
             messageListenerRef = null;
             document.getElementById('messages').innerHTML = '';
             document.getElementById('messageInput').value = '';
-            document.getElementById('createUsername').value = '';
-            document.getElementById('joinUsername').value = '';
             document.getElementById('joinCode').value = '';
             document.getElementById('joinPassword').value = '';
             document.getElementById('chatPassword').value = '';
