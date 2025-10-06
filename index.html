@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chatter - Chat!, Simple and Secure.</title>
+    <title>Chatter - Chat!, Simple and Secure</title>
     <link rel="icon" type="image/png" href="https://i.imgur.com/mSHbEmv.png">
     <style>
         * {
@@ -202,13 +202,29 @@
             background: #fafafa;
         }
 
-        .message {
+        .message-wrapper {
             margin-bottom: 15px;
+            position: relative;
+        }
+
+        .message {
             padding: 10px 15px;
             border-radius: 10px;
             max-width: 80%;
             word-wrap: break-word;
             animation: slideIn 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            user-select: none;
+        }
+
+        .system-message {
+            text-align: center;
+            padding: 8px 0;
+            margin: 10px 0;
+            font-size: 13px;
+            color: #999;
+            font-style: italic;
         }
 
         @keyframes slideIn {
@@ -232,6 +248,127 @@
             background: white;
             color: #333;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .emoji-picker {
+            position: fixed;
+            background: white;
+            border-radius: 12px;
+            padding: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            display: none;
+            z-index: 1000;
+            animation: popIn 0.2s ease;
+        }
+
+        @keyframes popIn {
+            from {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .emoji-picker.show {
+            display: flex;
+            gap: 8px;
+        }
+
+        .emoji-button {
+            font-size: 28px;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 8px;
+            transition: all 0.2s;
+            border: none;
+            background: transparent;
+            width: 45px;
+            height: 45px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .emoji-button:hover {
+            background: #f0f0f0;
+            transform: scale(1.2);
+        }
+
+        .emoji-button:active {
+            transform: scale(1.1);
+        }
+
+        .message-reactions {
+            display: flex;
+            gap: 5px;
+            margin-top: 5px;
+            flex-wrap: wrap;
+        }
+
+        .reaction {
+            background: rgba(0,0,0,0.1);
+            border-radius: 12px;
+            padding: 2px 8px;
+            font-size: 14px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .message.sent .reaction {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .reaction-count {
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .typing-indicator {
+            padding: 10px 20px;
+            background: #f0f0f0;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-size: 14px;
+            color: #666;
+            font-style: italic;
+            display: none;
+        }
+
+        .typing-indicator.show {
+            display: block;
+            animation: slideIn 0.3s ease;
+        }
+
+        .typing-dots {
+            display: inline-block;
+            margin-left: 5px;
+        }
+
+        .typing-dots span {
+            animation: blink 1.4s infinite;
+            font-size: 20px;
+            line-height: 0;
+        }
+
+        .typing-dots span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dots span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes blink {
+            0%, 60%, 100% {
+                opacity: 0.3;
+            }
+            30% {
+                opacity: 1;
+            }
         }
 
         .message-input {
@@ -285,24 +422,6 @@
         .success {
             background: #efe;
             color: #3c3;
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            font-size: 14px;
-        }
-
-        .warning {
-            background: #fff3cd;
-            color: #856404;
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            font-size: 14px;
-        }
-
-        .info {
-            background: #e3f2fd;
-            color: #1976d2;
             padding: 12px;
             border-radius: 8px;
             margin-bottom: 15px;
@@ -377,17 +496,17 @@
             <!-- Home View -->
             <div id="homeView" class="view active">
                 <div class="btn-group">
-                    <button class="btn btn-primary" onclick="showView('createView')">Create Chat</button>
-                    <button class="btn btn-secondary" onclick="showView('joinView')">Join Chat</button>
+                    <button class="btn btn-primary" onclick="window.appFunctions.showView('createView')">Create Chat</button>
+                    <button class="btn btn-secondary" onclick="window.appFunctions.showView('joinView')">Join Chat</button>
                 </div>
-                <button class="btn btn-tertiary" style="width: 100%;" onclick="showView('recentView')">📋 Recent Chats</button>
+                <button class="btn btn-tertiary" style="width: 100%;" onclick="window.appFunctions.showView('recentView')">📋 Recent Chats</button>
             </div>
 
             <!-- Recent Chats View -->
             <div id="recentView" class="view">
                 <h2 style="margin-bottom: 20px;">Recent Chats</h2>
                 <div id="recentChatsList" class="recent-chats-list"></div>
-                <button class="btn btn-secondary" style="width: 100%; margin-top: 20px;" onclick="showView('homeView')">Back</button>
+                <button class="btn btn-secondary" style="width: 100%; margin-top: 20px;" onclick="window.appFunctions.showView('homeView')">Back</button>
             </div>
 
             <!-- Create Chat View -->
@@ -398,7 +517,7 @@
                     <input type="text" id="createUsername" placeholder="Enter your username">
                 </div>
                 <div class="checkbox-group">
-                    <input type="checkbox" id="usePassword" onchange="togglePassword()">
+                    <input type="checkbox" id="usePassword" onchange="window.appFunctions.togglePassword()">
                     <label for="usePassword" style="margin: 0;">Require password to join</label>
                 </div>
                 <div class="form-group" id="passwordGroup" style="display: none;">
@@ -406,8 +525,8 @@
                     <input type="password" id="chatPassword" placeholder="Enter password">
                 </div>
                 <div id="createError" class="error" style="display: none;"></div>
-                <button class="btn btn-primary" id="createBtn" style="width: 100%; margin-bottom: 10px;" onclick="createChat()">Create Chat Room</button>
-                <button class="btn btn-secondary" style="width: 100%;" onclick="showView('homeView')">Back</button>
+                <button class="btn btn-primary" id="createBtn" style="width: 100%; margin-bottom: 10px;" onclick="window.appFunctions.createChat()">Create Chat Room</button>
+                <button class="btn btn-secondary" style="width: 100%;" onclick="window.appFunctions.showView('homeView')">Back</button>
             </div>
 
             <!-- Chat Created View -->
@@ -419,7 +538,7 @@
                     <div class="label" id="passwordLabel" style="display: none;">Password protected 🔒</div>
                 </div>
                 <div class="success">Share this code with others to let them join your chat room!</div>
-                <button class="btn btn-primary" style="width: 100%;" onclick="enterChatAsCreator()">Enter Chat Room</button>
+                <button class="btn btn-primary" style="width: 100%;" onclick="window.appFunctions.enterChatAsCreator()">Enter Chat Room</button>
             </div>
 
             <!-- Join Chat View -->
@@ -438,8 +557,8 @@
                     <input type="password" id="joinPassword" placeholder="Leave empty if no password">
                 </div>
                 <div id="joinError" class="error" style="display: none;"></div>
-                <button class="btn btn-primary" id="joinBtn" style="width: 100%; margin-bottom: 10px;" onclick="joinChat()">Join Chat</button>
-                <button class="btn btn-secondary" style="width: 100%;" onclick="showView('homeView')">Back</button>
+                <button class="btn btn-primary" id="joinBtn" style="width: 100%; margin-bottom: 10px;" onclick="window.appFunctions.joinChat()">Join Chat</button>
+                <button class="btn btn-secondary" style="width: 100%;" onclick="window.appFunctions.showView('homeView')">Back</button>
             </div>
 
             <!-- Chat Room View -->
@@ -447,12 +566,19 @@
                 <div class="chat-container">
                     <div class="chat-header">
                         <div class="chat-info">Room: <span id="roomCode"></span></div>
-                        <button class="back-btn" onclick="leaveChat()">Leave</button>
+                        <button class="back-btn" onclick="window.appFunctions.leaveChat()">Leave</button>
                     </div>
-                    <div class="messages" id="messages"></div>
+                    <div class="messages" id="messages">
+                        <div id="typingIndicator" class="typing-indicator">
+                            <span id="typingUsers"></span>
+                            <span class="typing-dots">
+                                <span>.</span><span>.</span><span>.</span>
+                            </span>
+                        </div>
+                    </div>
                     <div class="message-input">
-                        <input type="text" id="messageInput" placeholder="Type a message..." onkeypress="handleEnter(event)">
-                        <button onclick="sendMessage()">Send</button>
+                        <input type="text" id="messageInput" placeholder="Type a message..." onkeypress="window.appFunctions.handleEnter(event)" oninput="window.appFunctions.handleTyping()">
+                        <button onclick="window.appFunctions.sendMessage()">Send</button>
                     </div>
                 </div>
             </div>
@@ -461,9 +587,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, set, push, onChildAdded, get, off, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-
-        console.log("Initializing Firebase...");
+        import { getDatabase, ref, set, push, onChildAdded, onChildChanged, get, off, onValue, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyA4CBlge2PSUebFO3HkU4zHEEfZpWr-e5M",
@@ -475,454 +599,687 @@
             appId: "1:881197718651:web:0b9a6511c2d5fe694c96de"
         };
 
-        try {
-            const app = initializeApp(firebaseConfig);
-            const database = getDatabase(app);
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
 
-            const testRef = ref(database, '.info/connected');
-            get(testRef).then(() => {
-                console.log("✓ Firebase connected successfully");
-            }).catch(err => {
-                console.warn("Database connection test failed:", err);
-            });
+        window.firebase = {
+            db: database,
+            ref, set, push, onChildAdded, onChildChanged, onValue, get, off, remove,
+            initialized: true
+        };
 
-            window.firebase = {
-                db: database,
-                ref: ref,
-                set: set,
-                push: push,
-                onChildAdded: onChildAdded,
-                get: get,
-                off: off,
-                query: query,
-                limitToLast: limitToLast,
-                initialized: true
-            };
-
-            console.log("✓ Firebase ready");
-            
-        } catch (error) {
-            console.error("Firebase error:", error);
-        }
+        console.log("✓ Firebase ready");
     </script>
 
     <script>
-        let currentRoom = null;
-        let currentUsername = null;
-        let messageListenerRef = null;
+        (function() {
+            let currentRoom = null;
+            let currentUsername = null;
+            let messageListenerRef = null;
+            let typingTimeoutId = null;
+            let typingListenerRef = null;
+            let reactionsListeners = {};
+            let currentEmojiPicker = null;
 
-        // User data management
-        const USER_DATA_KEY = 'chatroom_user_data';
-        const RECENT_CHATS_KEY = 'chatroom_recent_chats';
+            const USER_DATA_KEY = 'chatroom_user_data';
+            const RECENT_CHATS_KEY = 'chatroom_recent_chats';
 
-        function getUserData() {
-            const data = localStorage.getItem(USER_DATA_KEY);
-            return data ? JSON.parse(data) : { username: '', userId: generateUserId() };
-        }
-
-        function saveUserData(username) {
-            const userData = getUserData();
-            userData.username = username;
-            localStorage.setItem(USER_DATA_KEY, JSON.stringify(userData));
-        }
-
-        function generateUserId() {
-            return 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-        }
-
-        function getRecentChats() {
-            const chats = localStorage.getItem(RECENT_CHATS_KEY);
-            return chats ? JSON.parse(chats) : [];
-        }
-
-        function saveRecentChat(code, username, hasPassword) {
-            const recentChats = getRecentChats();
-            
-            // Remove existing entry for this code
-            const filtered = recentChats.filter(chat => chat.code !== code);
-            
-            // Add new entry at the beginning
-            filtered.unshift({
-                code: code,
-                username: username,
-                hasPassword: hasPassword,
-                timestamp: Date.now()
-            });
-
-            // Keep only the last 10 chats
-            const limited = filtered.slice(0, 10);
-            
-            localStorage.setItem(RECENT_CHATS_KEY, JSON.stringify(limited));
-        }
-
-        function loadRecentChats() {
-            const recentChats = getRecentChats();
-            const container = document.getElementById('recentChatsList');
-            
-            if (recentChats.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-state-icon">📭</div>
-                        <p>No recent chats</p>
-                        <p style="font-size: 14px; margin-top: 10px;">Join or create a chat to see it here!</p>
-                    </div>
-                `;
-                return;
+            function getUserData() {
+                const data = localStorage.getItem(USER_DATA_KEY);
+                return data ? JSON.parse(data) : { username: '', userId: generateUserId() };
             }
 
-            container.innerHTML = '';
-            
-            recentChats.forEach(chat => {
-                const chatItem = document.createElement('div');
-                chatItem.className = 'recent-chat-item';
-                
-                const timeAgo = getTimeAgo(chat.timestamp);
-                const lockIcon = chat.hasPassword ? '<span class="recent-chat-locked">🔒</span>' : '';
-                
-                chatItem.innerHTML = `
-                    <div class="recent-chat-code">${chat.code}${lockIcon}</div>
-                    <div class="recent-chat-username">Username: ${chat.username}</div>
-                    <div class="recent-chat-time">${timeAgo}</div>
-                `;
-                
-                chatItem.onclick = () => rejoinChat(chat);
-                container.appendChild(chatItem);
-            });
-        }
-
-        function getTimeAgo(timestamp) {
-            const seconds = Math.floor((Date.now() - timestamp) / 1000);
-            
-            if (seconds < 60) return 'Just now';
-            if (seconds < 3600) return Math.floor(seconds / 60) + ' minutes ago';
-            if (seconds < 86400) return Math.floor(seconds / 3600) + ' hours ago';
-            if (seconds < 604800) return Math.floor(seconds / 86400) + ' days ago';
-            return new Date(timestamp).toLocaleDateString();
-        }
-
-        function rejoinChat(chat) {
-            document.getElementById('joinUsername').value = chat.username;
-            document.getElementById('joinCode').value = chat.code;
-            
-            if (chat.hasPassword) {
-                showView('joinView');
-                document.getElementById('joinPassword').focus();
-            } else {
-                // Auto-join if no password
-                showView('joinView');
-            }
-        }
-
-        // Pre-fill username if remembered
-        window.addEventListener('load', () => {
-            const userData = getUserData();
-            if (userData.username) {
-                document.getElementById('createUsername').value = userData.username;
-                document.getElementById('joinUsername').value = userData.username;
-            }
-        });
-
-        function showView(viewId) {
-            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-            document.getElementById(viewId).classList.add('active');
-            document.querySelectorAll('.error').forEach(e => e.style.display = 'none');
-            
-            if (viewId === 'recentView') {
-                loadRecentChats();
-            }
-        }
-
-        function togglePassword() {
-            const checked = document.getElementById('usePassword').checked;
-            document.getElementById('passwordGroup').style.display = checked ? 'block' : 'none';
-        }
-
-        function generateCode() {
-            return Math.floor(100000 + Math.random() * 900000).toString();
-        }
-
-        async function createChat() {
-            const username = document.getElementById('createUsername').value.trim();
-            const usePass = document.getElementById('usePassword').checked;
-            const password = document.getElementById('chatPassword').value;
-
-            if (!username) {
-                showError('createError', 'Please enter a username');
-                return;
+            function saveUserData(username) {
+                const userData = getUserData();
+                userData.username = username;
+                localStorage.setItem(USER_DATA_KEY, JSON.stringify(userData));
             }
 
-            if (usePass && !password) {
-                showError('createError', 'Please enter a password');
-                return;
+            function generateUserId() {
+                return 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
             }
 
-            if (!window.firebase?.initialized) {
-                showError('createError', 'Firebase not ready. Please refresh the page.');
-                return;
+            function getRecentChats() {
+                const chats = localStorage.getItem(RECENT_CHATS_KEY);
+                return chats ? JSON.parse(chats) : [];
             }
 
-            const btn = document.getElementById('createBtn');
-            btn.disabled = true;
-            btn.textContent = 'Creating...';
-
-            try {
-                const code = generateCode();
-                const roomRef = window.firebase.ref(window.firebase.db, `rooms/${code}`);
-                
-                const roomData = {
-                    password: usePass ? password : null,
-                    createdAt: Date.now(),
-                    creator: username
-                };
-
-                const timeoutPromise = new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error('Connection timeout. Please check Firebase Database setup.')), 10000)
-                );
-
-                await Promise.race([
-                    window.firebase.set(roomRef, roomData),
-                    timeoutPromise
-                ]);
-
-                currentRoom = code;
-                currentUsername = username;
-
-                // Save user data
-                saveUserData(username);
-                saveRecentChat(code, username, usePass);
-
-                document.getElementById('displayCode').textContent = code;
-                document.getElementById('passwordLabel').style.display = usePass ? 'block' : 'none';
-                
-                btn.disabled = false;
-                btn.textContent = 'Create Chat Room';
-                showView('createdView');
-                
-            } catch (error) {
-                console.error("Create chat error:", error);
-                let errorMsg = error.message;
-                
-                if (error.code === 'PERMISSION_DENIED') {
-                    errorMsg = 'Permission denied. Go to Firebase Console → Realtime Database → Rules and set: {"rules": {".read": true, ".write": true}}';
-                } else if (errorMsg.includes('timeout')) {
-                    errorMsg = 'Connection timeout. Make sure Realtime Database is created in Firebase Console.';
-                }
-                
-                showError('createError', errorMsg);
-                btn.disabled = false;
-                btn.textContent = 'Create Chat Room';
-            }
-        }
-
-        async function enterChatAsCreator() {
-            try {
-                const messagesRef = window.firebase.ref(window.firebase.db, `rooms/${currentRoom}/messages`);
-                await window.firebase.push(messagesRef, {
-                    username: 'System',
-                    text: `${currentUsername} created the room`,
+            function saveRecentChat(code, username, hasPassword) {
+                const recentChats = getRecentChats();
+                const filtered = recentChats.filter(chat => chat.code !== code);
+                filtered.unshift({
+                    code: code,
+                    username: username,
+                    hasPassword: hasPassword,
                     timestamp: Date.now()
                 });
-
-                document.getElementById('roomCode').textContent = currentRoom;
-                setupMessageListener();
-                showView('chatView');
-            } catch (error) {
-                console.error("Enter chat error:", error);
-                alert('Failed to enter chat: ' + error.message);
-            }
-        }
-
-        async function joinChat() {
-            const username = document.getElementById('joinUsername').value.trim();
-            const code = document.getElementById('joinCode').value.trim();
-            const password = document.getElementById('joinPassword').value;
-
-            if (!username) {
-                showError('joinError', 'Please enter a username');
-                return;
+                const limited = filtered.slice(0, 10);
+                localStorage.setItem(RECENT_CHATS_KEY, JSON.stringify(limited));
             }
 
-            if (!code || code.length !== 6) {
-                showError('joinError', 'Please enter a valid 6-digit chat code');
-                return;
-            }
-
-            if (!window.firebase?.initialized) {
-                showError('joinError', 'Firebase not ready. Please refresh the page.');
-                return;
-            }
-
-            const btn = document.getElementById('joinBtn');
-            btn.disabled = true;
-            btn.textContent = 'Joining...';
-
-            try {
-                const roomRef = window.firebase.ref(window.firebase.db, `rooms/${code}`);
+            function loadRecentChats() {
+                const recentChats = getRecentChats();
+                const container = document.getElementById('recentChatsList');
                 
-                const timeoutPromise = new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error('Connection timeout')), 10000)
-                );
-
-                const snapshot = await Promise.race([
-                    window.firebase.get(roomRef),
-                    timeoutPromise
-                ]);
-
-                if (!snapshot.exists()) {
-                    showError('joinError', 'Chat room not found. Please check the code.');
-                    btn.disabled = false;
-                    btn.textContent = 'Join Chat';
+                if (recentChats.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📭</div>
+                            <p>No recent chats</p>
+                            <p style="font-size: 14px; margin-top: 10px;">Join or create a chat to see it here!</p>
+                        </div>
+                    `;
                     return;
                 }
 
-                const roomData = snapshot.val();
+                container.innerHTML = '';
                 
-                if (roomData.password && roomData.password !== password) {
-                    showError('joinError', 'Incorrect password');
-                    btn.disabled = false;
-                    btn.textContent = 'Join Chat';
-                    return;
-                }
-
-                currentRoom = code;
-                currentUsername = username;
-
-                // Save user data
-                saveUserData(username);
-                saveRecentChat(code, username, !!roomData.password);
-
-                const messagesRef = window.firebase.ref(window.firebase.db, `rooms/${code}/messages`);
-                await window.firebase.push(messagesRef, {
-                    username: 'System',
-                    text: `${username} joined the room`,
-                    timestamp: Date.now()
+                recentChats.forEach(chat => {
+                    const chatItem = document.createElement('div');
+                    chatItem.className = 'recent-chat-item';
+                    
+                    const timeAgo = getTimeAgo(chat.timestamp);
+                    const lockIcon = chat.hasPassword ? '<span class="recent-chat-locked">🔒</span>' : '';
+                    
+                    chatItem.innerHTML = `
+                        <div class="recent-chat-code">${chat.code}${lockIcon}</div>
+                        <div class="recent-chat-username">Username: ${chat.username}</div>
+                        <div class="recent-chat-time">${timeAgo}</div>
+                    `;
+                    
+                    chatItem.onclick = () => rejoinChat(chat);
+                    container.appendChild(chatItem);
                 });
-
-                document.getElementById('roomCode').textContent = code;
-                setupMessageListener();
-                showView('chatView');
-                
-            } catch (error) {
-                console.error("Join chat error:", error);
-                let errorMsg = error.message;
-                
-                if (error.code === 'PERMISSION_DENIED') {
-                    errorMsg = 'Permission denied. Database rules need to be updated.';
-                }
-                
-                showError('joinError', errorMsg);
-                btn.disabled = false;
-                btn.textContent = 'Join Chat';
             }
-        }
 
-        function setupMessageListener() {
-            const messagesRef = window.firebase.ref(window.firebase.db, `rooms/${currentRoom}/messages`);
-            
-            document.getElementById('messages').innerHTML = '';
-            
-            messageListenerRef = messagesRef;
-            window.firebase.onChildAdded(messagesRef, (snapshot) => {
-                const message = snapshot.val();
-                if (message && message.username !== 'System') {
-                    displayMessage(message, message.username === currentUsername);
-                }
-            });
-        }
-
-        async function sendMessage() {
-            const input = document.getElementById('messageInput');
-            const text = input.value.trim();
-
-            if (!text) return;
-
-            try {
-                const messagesRef = window.firebase.ref(window.firebase.db, `rooms/${currentRoom}/messages`);
+            function getTimeAgo(timestamp) {
+                const seconds = Math.floor((Date.now() - timestamp) / 1000);
                 
-                await window.firebase.push(messagesRef, {
+                if (seconds < 60) return 'Just now';
+                if (seconds < 3600) return Math.floor(seconds / 60) + ' minutes ago';
+                if (seconds < 86400) return Math.floor(seconds / 3600) + ' hours ago';
+                if (seconds < 604800) return Math.floor(seconds / 86400) + ' days ago';
+                return new Date(timestamp).toLocaleDateString();
+            }
+
+            function rejoinChat(chat) {
+                document.getElementById('joinUsername').value = chat.username;
+                document.getElementById('joinCode').value = chat.code;
+                showView('joinView');
+                if (chat.hasPassword) {
+                    document.getElementById('joinPassword').focus();
+                }
+            }
+
+            function handleTyping() {
+                if (!currentRoom || !currentUsername) return;
+
+                const typingRef = window.firebase.ref(window.firebase.db, `rooms/${currentRoom}/typing/${currentUsername}`);
+                
+                window.firebase.set(typingRef, {
                     username: currentUsername,
-                    text: text,
                     timestamp: Date.now()
                 });
 
-                input.value = '';
-            } catch (error) {
-                console.error("Send message error:", error);
-                alert('Failed to send message: ' + error.message);
-            }
-        }
+                if (typingTimeoutId) clearTimeout(typingTimeoutId);
 
-        function displayMessage(message, isSent) {
-            const messagesDiv = document.getElementById('messages');
-            const msgDiv = document.createElement('div');
-            msgDiv.className = `message ${isSent ? 'sent' : 'received'}`;
-            
-            let timeString = 'Just now';
-            if (message.timestamp) {
-                const date = new Date(message.timestamp);
-                if (!isNaN(date.getTime())) {
-                    timeString = date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                typingTimeoutId = setTimeout(() => {
+                    window.firebase.remove(typingRef);
+                }, 3000);
+            }
+
+            function setupTypingListener() {
+                if (!currentRoom) return;
+
+                const typingRef = window.firebase.ref(window.firebase.db, `rooms/${currentRoom}/typing`);
+                typingListenerRef = typingRef;
+
+                window.firebase.onValue(typingRef, (snapshot) => {
+                    const typingUsers = [];
+                    const now = Date.now();
+
+                    snapshot.forEach((child) => {
+                        const data = child.val();
+                        if (data.username !== currentUsername && (now - data.timestamp) < 5000) {
+                            typingUsers.push(data.username);
+                        }
+                    });
+
+                    updateTypingIndicator(typingUsers);
+                });
+            }
+
+            function updateTypingIndicator(users) {
+                const indicator = document.getElementById('typingIndicator');
+                const usersSpan = document.getElementById('typingUsers');
+
+                if (users.length === 0) {
+                    indicator.classList.remove('show');
+                } else {
+                    indicator.classList.add('show');
+                    if (users.length === 1) {
+                        usersSpan.textContent = `${users[0]} is typing`;
+                    } else if (users.length === 2) {
+                        usersSpan.textContent = `${users[0]} and ${users[1]} are typing`;
+                    } else {
+                        usersSpan.textContent = `${users[0]} and ${users.length - 1} others are typing`;
+                    }
                 }
             }
-            
-            const textContent = document.createTextNode(message.text);
-            const usernameStrong = document.createElement('strong');
-            usernameStrong.textContent = message.username;
-            const timeSmall = document.createElement('small');
-            timeSmall.textContent = timeString;
-            
-            msgDiv.appendChild(usernameStrong);
-            msgDiv.appendChild(document.createElement('br'));
-            msgDiv.appendChild(textContent);
-            msgDiv.appendChild(document.createElement('br'));
-            msgDiv.appendChild(timeSmall);
-            
-            messagesDiv.appendChild(msgDiv);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-        }
 
-        function handleEnter(event) {
-            if (event.key === 'Enter') {
-                sendMessage();
+            function showEmojiPicker(messageId, event) {
+                event.stopPropagation();
+                
+                if (currentEmojiPicker) {
+                    currentEmojiPicker.remove();
+                    currentEmojiPicker = null;
+                }
+
+                const picker = document.createElement('div');
+                picker.className = 'emoji-picker show';
+                picker.innerHTML = `
+                    <button class="emoji-button" data-emoji="❤️">❤️</button>
+                    <button class="emoji-button" data-emoji="👍">👍</button>
+                    <button class="emoji-button" data-emoji="😂">😂</button>
+                    <button class="emoji-button" data-emoji="😮">😮</button>
+                    <button class="emoji-button" data-emoji="🎉">🎉</button>
+                `;
+
+                const msgWrapper = document.querySelector(`[data-message-id="${messageId}"]`);
+                const rect = msgWrapper.getBoundingClientRect();
+                
+                picker.style.top = (rect.top - 60) + 'px';
+                picker.style.left = Math.max(10, rect.left) + 'px';
+
+                document.body.appendChild(picker);
+                currentEmojiPicker = picker;
+
+                picker.querySelectorAll('.emoji-button').forEach(btn => {
+                    btn.onclick = (e) => {
+                        e.stopPropagation();
+                        const emoji = btn.getAttribute('data-emoji');
+                        addReaction(messageId, emoji);
+                    };
+                });
+
+                setTimeout(() => {
+                    document.addEventListener('click', function closeHandler(e) {
+                        if (picker && !picker.contains(e.target)) {
+                            picker.remove();
+                            currentEmojiPicker = null;
+                            document.removeEventListener('click', closeHandler);
+                        }
+                    });
+                }, 100);
             }
-        }
 
-        async function leaveChat() {
-            try {
-                if (currentRoom && currentUsername) {
+            async function addReaction(messageId, emoji) {
+                if (!currentRoom || !currentUsername) return;
+
+                try {
+                    const reactionRef = window.firebase.ref(window.firebase.db, 
+                        `rooms/${currentRoom}/messages/${messageId}/reactions/${emoji}/${currentUsername}`);
+                    
+                    await window.firebase.set(reactionRef, {
+                        username: currentUsername,
+                        timestamp: Date.now()
+                    });
+
+                    if (currentEmojiPicker) {
+                        currentEmojiPicker.remove();
+                        currentEmojiPicker = null;
+                    }
+                } catch (error) {
+                    console.error("Error adding reaction:", error);
+                }
+            }
+
+            function setupReactionListener(messageId) {
+                const reactionsRef = window.firebase.ref(window.firebase.db, 
+                    `rooms/${currentRoom}/messages/${messageId}/reactions`);
+                
+                if (reactionsListeners[messageId]) {
+                    window.firebase.off(reactionsListeners[messageId]);
+                }
+
+                reactionsListeners[messageId] = reactionsRef;
+
+                window.firebase.onValue(reactionsRef, (snapshot) => {
+                    updateReactionsDisplay(messageId, snapshot.val());
+                });
+            }
+
+            function updateReactionsDisplay(messageId, reactions) {
+                const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
+                if (!messageElement) return;
+
+                let reactionsContainer = messageElement.querySelector('.message-reactions');
+                
+                if (!reactionsContainer) {
+                    reactionsContainer = document.createElement('div');
+                    reactionsContainer.className = 'message-reactions';
+                    messageElement.querySelector('.message').appendChild(reactionsContainer);
+                }
+
+                reactionsContainer.innerHTML = '';
+
+                if (reactions) {
+                    Object.keys(reactions).forEach(emoji => {
+                        const count = Object.keys(reactions[emoji]).length;
+                        const reactionSpan = document.createElement('span');
+                        reactionSpan.className = 'reaction';
+                        reactionSpan.innerHTML = `${emoji} <span class="reaction-count">${count}</span>`;
+                        reactionsContainer.appendChild(reactionSpan);
+                    });
+                }
+            }
+
+            window.addEventListener('load', () => {
+                const userData = getUserData();
+                if (userData.username) {
+                    document.getElementById('createUsername').value = userData.username;
+                    document.getElementById('joinUsername').value = userData.username;
+                }
+            });
+
+            function showView(viewId) {
+                document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+                document.getElementById(viewId).classList.add('active');
+                document.querySelectorAll('.error').forEach(e => e.style.display = 'none');
+                
+                if (viewId === 'recentView') {
+                    loadRecentChats();
+                }
+            }
+
+            function togglePassword() {
+                const checked = document.getElementById('usePassword').checked;
+                document.getElementById('passwordGroup').style.display = checked ? 'block' : 'none';
+            }
+
+            function generateCode() {
+                return Math.floor(100000 + Math.random() + 900000).toString();
+            }
+
+            async function createChat() {
+                const username = document.getElementById('createUsername').value.trim();
+                const usePass = document.getElementById('usePassword').checked;
+                const password = document.getElementById('chatPassword').value;
+
+                if (!username) {
+                    showError('createError', 'Please enter a username');
+                    return;
+                }
+
+                if (usePass && !password) {
+                    showError('createError', 'Please enter a password');
+                    return;
+                }
+
+                if (!window.firebase?.initialized) {
+                    showError('createError', 'Firebase not ready. Please refresh the page.');
+                    return;
+                }
+
+                const btn = document.getElementById('createBtn');
+                btn.disabled = true;
+                btn.textContent = 'Creating...';
+
+                try {
+                    const code = generateCode();
+                    const roomRef = window.firebase.ref(window.firebase.db, `rooms/${code}`);
+                    
+                    const roomData = {
+                        password: usePass ? password : null,
+                        createdAt: Date.now(),
+                        creator: username
+                    };
+
+                    const timeoutPromise = new Promise((_, reject) => 
+                        setTimeout(() => reject(new Error('Connection timeout. Please check Firebase Database setup.')), 10000)
+                    );
+
+                    await Promise.race([
+                        window.firebase.set(roomRef, roomData),
+                        timeoutPromise
+                    ]);
+
+                    currentRoom = code;
+                    currentUsername = username;
+
+                    saveUserData(username);
+                    saveRecentChat(code, username, usePass);
+
+                    document.getElementById('displayCode').textContent = code;
+                    document.getElementById('passwordLabel').style.display = usePass ? 'block' : 'none';
+                    
+                    btn.disabled = false;
+                    btn.textContent = 'Create Chat Room';
+                    showView('createdView');
+                    
+                } catch (error) {
+                    console.error("Create chat error:", error);
+                    let errorMsg = error.message;
+                    
+                    if (error.code === 'PERMISSION_DENIED') {
+                        errorMsg = 'Permission denied. Go to Firebase Console → Realtime Database → Rules and set: {"rules": {".read": true, ".write": true}}';
+                    } else if (errorMsg.includes('timeout')) {
+                        errorMsg = 'Connection timeout. Make sure Realtime Database is created in Firebase Console.';
+                    }
+                    
+                    showError('createError', errorMsg);
+                    btn.disabled = false;
+                    btn.textContent = 'Create Chat Room';
+                }
+            }
+
+            async function enterChatAsCreator() {
+                try {
                     const messagesRef = window.firebase.ref(window.firebase.db, `rooms/${currentRoom}/messages`);
                     await window.firebase.push(messagesRef, {
                         username: 'System',
-                        text: `${currentUsername} left the room`,
-                        timestamp: Date.now()
+                        text: `${currentUsername} created the room`,
+                        timestamp: Date.now(),
+                        isSystem: true
                     });
-                }
 
-                if (messageListenerRef) {
-                    window.firebase.off(messageListenerRef);
+                    document.getElementById('roomCode').textContent = currentRoom;
+                    setupMessageListener();
+                    setupTypingListener();
+                    showView('chatView');
+                } catch (error) {
+                    console.error("Enter chat error:", error);
+                    alert('Failed to enter chat: ' + error.message);
                 }
-            } catch (error) {
-                console.error("Leave chat error:", error);
             }
 
-            currentRoom = null;
-            currentUsername = null;
-            messageListenerRef = null;
-            document.getElementById('messages').innerHTML = '';
-            document.getElementById('messageInput').value = '';
-            document.getElementById('joinCode').value = '';
-            document.getElementById('joinPassword').value = '';
-            document.getElementById('chatPassword').value = '';
-            document.getElementById('usePassword').checked = false;
-            document.getElementById('passwordGroup').style.display = 'none';
-            showView('homeView');
-        }
+            async function joinChat() {
+                const username = document.getElementById('joinUsername').value.trim();
+                const code = document.getElementById('joinCode').value.trim();
+                const password = document.getElementById('joinPassword').value;
 
-        function showError(elementId, message) {
-            const errorDiv = document.getElementById(elementId);
-            errorDiv.textContent = message;
-            errorDiv.style.display = 'block';
-        }
+                if (!username) {
+                    showError('joinError', 'Please enter a username');
+                    return;
+                }
+
+                if (!code || code.length !== 6) {
+                    showError('joinError', 'Please enter a valid 6-digit chat code');
+                    return;
+                }
+
+                if (!window.firebase?.initialized) {
+                    showError('joinError', 'Firebase not ready. Please refresh the page.');
+                    return;
+                }
+
+                const btn = document.getElementById('joinBtn');
+                btn.disabled = true;
+                btn.textContent = 'Joining...';
+
+                try {
+                    const roomRef = window.firebase.ref(window.firebase.db, `rooms/${code}`);
+                    
+                    const timeoutPromise = new Promise((_, reject) => 
+                        setTimeout(() => reject(new Error('Connection timeout')), 10000)
+                    );
+
+                    const snapshot = await Promise.race([
+                        window.firebase.get(roomRef),
+                        timeoutPromise
+                    ]);
+
+                    if (!snapshot.exists()) {
+                        showError('joinError', 'Chat room not found. Please check the code.');
+                        btn.disabled = false;
+                        btn.textContent = 'Join Chat';
+                        return;
+                    }
+
+                    const roomData = snapshot.val();
+                    
+                    if (roomData.password && roomData.password !== password) {
+                        showError('joinError', 'Incorrect password');
+                        btn.disabled = false;
+                        btn.textContent = 'Join Chat';
+                        return;
+                    }
+
+                    currentRoom = code;
+                    currentUsername = username;
+
+                    saveUserData(username);
+                    saveRecentChat(code, username, !!roomData.password);
+
+                    const messagesRef = window.firebase.ref(window.firebase.db, `rooms/${code}/messages`);
+                    await window.firebase.push(messagesRef, {
+                        username: 'System',
+                        text: `${username} joined the room`,
+                        timestamp: Date.now(),
+                        isSystem: true
+                    });
+
+                    document.getElementById('roomCode').textContent = code;
+                    setupMessageListener();
+                    setupTypingListener();
+                    showView('chatView');
+                    
+                } catch (error) {
+                    console.error("Join chat error:", error);
+                    let errorMsg = error.message;
+                    
+                    if (error.code === 'PERMISSION_DENIED') {
+                        errorMsg = 'Permission denied. Database rules need to be updated.';
+                    }
+                    
+                    showError('joinError', errorMsg);
+                    btn.disabled = false;
+                    btn.textContent = 'Join Chat';
+                }
+            }
+
+            function setupMessageListener() {
+                const messagesRef = window.firebase.ref(window.firebase.db, `rooms/${currentRoom}/messages`);
+                
+                document.getElementById('messages').innerHTML = '<div id="typingIndicator" class="typing-indicator"><span id="typingUsers"></span><span class="typing-dots"><span>.</span><span>.</span><span>.</span></span></div>';
+                
+                messageListenerRef = messagesRef;
+                window.firebase.onChildAdded(messagesRef, (snapshot) => {
+                    const message = snapshot.val();
+                    if (message) {
+                        if (message.isSystem) {
+                            displaySystemMessage(message);
+                        } else {
+                            displayMessage(message, message.username === currentUsername, snapshot.key);
+                        }
+                    }
+                });
+            }
+
+            function displaySystemMessage(message) {
+                const messagesDiv = document.getElementById('messages');
+                const systemMsg = document.createElement('div');
+                systemMsg.className = 'system-message';
+                systemMsg.textContent = message.text;
+                
+                const typingIndicator = document.getElementById('typingIndicator');
+                messagesDiv.insertBefore(systemMsg, typingIndicator);
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            }
+
+            async function sendMessage() {
+                const input = document.getElementById('messageInput');
+                const text = input.value.trim();
+
+                if (!text) return;
+
+                try {
+                    const messagesRef = window.firebase.ref(window.firebase.db, `rooms/${currentRoom}/messages`);
+                    
+                    await window.firebase.push(messagesRef, {
+                        username: currentUsername,
+                        text: text,
+                        timestamp: Date.now(),
+                        isSystem: false
+                    });
+
+                    input.value = '';
+                    
+                    const typingRef = window.firebase.ref(window.firebase.db, `rooms/${currentRoom}/typing/${currentUsername}`);
+                    window.firebase.remove(typingRef);
+                    
+                    if (typingTimeoutId) {
+                        clearTimeout(typingTimeoutId);
+                    }
+                } catch (error) {
+                    console.error("Send message error:", error);
+                    alert('Failed to send message: ' + error.message);
+                }
+            }
+
+            function displayMessage(message, isSent, messageId) {
+                const messagesDiv = document.getElementById('messages');
+                const msgWrapper = document.createElement('div');
+                msgWrapper.className = 'message-wrapper';
+                msgWrapper.setAttribute('data-message-id', messageId);
+                
+                const msgDiv = document.createElement('div');
+                msgDiv.className = `message ${isSent ? 'sent' : 'received'}`;
+                
+                let timeString = 'Just now';
+                if (message.timestamp) {
+                    const date = new Date(message.timestamp);
+                    if (!isNaN(date.getTime())) {
+                        timeString = date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                    }
+                }
+                
+                const textContent = document.createTextNode(message.text);
+                const usernameStrong = document.createElement('strong');
+                usernameStrong.textContent = message.username;
+                const timeSmall = document.createElement('small');
+                timeSmall.textContent = timeString;
+                
+                msgDiv.appendChild(usernameStrong);
+                msgDiv.appendChild(document.createElement('br'));
+                msgDiv.appendChild(textContent);
+                msgDiv.appendChild(document.createElement('br'));
+                msgDiv.appendChild(timeSmall);
+                
+                msgWrapper.appendChild(msgDiv);
+
+                let longPressTimer;
+                
+                msgWrapper.addEventListener('mouseenter', (e) => {
+                    if (window.matchMedia("(hover: hover)").matches) {
+                        showEmojiPicker(messageId, e);
+                    }
+                });
+
+                msgWrapper.addEventListener('mouseleave', () => {
+                    if (window.matchMedia("(hover: hover)").matches) {
+                        setTimeout(() => {
+                            if (currentEmojiPicker && !currentEmojiPicker.matches(':hover')) {
+                                currentEmojiPicker.remove();
+                                currentEmojiPicker = null;
+                            }
+                        }, 300);
+                    }
+                });
+
+                msgWrapper.addEventListener('touchstart', (e) => {
+                    longPressTimer = setTimeout(() => {
+                        showEmojiPicker(messageId, e);
+                        if (navigator.vibrate) navigator.vibrate(50);
+                    }, 500);
+                }, { passive: true });
+
+                msgWrapper.addEventListener('touchend', () => {
+                    clearTimeout(longPressTimer);
+                }, { passive: true });
+
+                msgWrapper.addEventListener('touchmove', () => {
+                    clearTimeout(longPressTimer);
+                }, { passive: true });
+                
+                const typingIndicator = document.getElementById('typingIndicator');
+                messagesDiv.insertBefore(msgWrapper, typingIndicator);
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+                setupReactionListener(messageId);
+            }
+
+            function handleEnter(event) {
+                if (event.key === 'Enter') {
+                    sendMessage();
+                }
+            }
+
+            async function leaveChat() {
+                try {
+                    if (currentRoom && currentUsername) {
+                        const messagesRef = window.firebase.ref(window.firebase.db, `rooms/${currentRoom}/messages`);
+                        await window.firebase.push(messagesRef, {
+                            username: 'System',
+                            text: `${currentUsername} left the chat`,
+                            timestamp: Date.now(),
+                            isSystem: true
+                        });
+
+                        const typingRef = window.firebase.ref(window.firebase.db, `rooms/${currentRoom}/typing/${currentUsername}`);
+                        window.firebase.remove(typingRef);
+                    }
+
+                    if (messageListenerRef) {
+                        window.firebase.off(messageListenerRef);
+                    }
+
+                    if (typingListenerRef) {
+                        window.firebase.off(typingListenerRef);
+                    }
+
+                    Object.values(reactionsListeners).forEach(ref => {
+                        window.firebase.off(ref);
+                    });
+                    reactionsListeners = {};
+
+                } catch (error) {
+                    console.error("Leave chat error:", error);
+                }
+
+                currentRoom = null;
+                currentUsername = null;
+                messageListenerRef = null;
+                typingListenerRef = null;
+                document.getElementById('messages').innerHTML = '';
+                document.getElementById('messageInput').value = '';
+                document.getElementById('joinCode').value = '';
+                document.getElementById('joinPassword').value = '';
+                document.getElementById('chatPassword').value = '';
+                document.getElementById('usePassword').checked = false;
+                document.getElementById('passwordGroup').style.display = 'none';
+                showView('homeView');
+            }
+
+            function showError(elementId, message) {
+                const errorDiv = document.getElementById(elementId);
+                errorDiv.textContent = message;
+                errorDiv.style.display = 'block';
+            }
+
+            // Export functions to window for WebView compatibility
+            window.appFunctions = {
+                showView,
+                togglePassword,
+                createChat,
+                enterChatAsCreator,
+                joinChat,
+                sendMessage,
+                handleEnter,
+                handleTyping,
+                leaveChat
+            };
+        })();
     </script>
 </body>
 </html>
