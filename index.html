@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Chatter - Chat!, Simple and Secure</title>
     <link rel="icon" type="image/png" href="https://i.imgur.com/mSHbEmv.png">
     <style>
@@ -179,6 +179,93 @@
             display: flex;
             flex-direction: column;
             height: 500px;
+            position: relative;
+        }
+
+        /* Mobile keyboard adjustment */
+        @media screen and (max-width: 768px) {
+            body {
+                height: 100vh;
+                overflow: hidden;
+            }
+
+            .container {
+                max-height: 100vh;
+                overflow: hidden;
+            }
+
+            .chat-container {
+                height: calc(100vh - 200px);
+            }
+
+            body.keyboard-open {
+                height: 100vh;
+                overflow: hidden;
+            }
+
+            body.keyboard-open .container {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                margin: 0;
+                border-radius: 0;
+                max-width: 100%;
+                max-height: 100vh;
+                display: flex;
+                flex-direction: column;
+                overflow: hidden;
+            }
+
+            body.keyboard-open .header {
+                flex-shrink: 0;
+                padding: 15px;
+            }
+
+            body.keyboard-open .content {
+                flex: 1;
+                overflow: hidden;
+                padding: 0;
+                display: flex;
+                flex-direction: column;
+            }
+
+            body.keyboard-open #chatView {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                overflow: hidden;
+            }
+
+            body.keyboard-open .chat-container {
+                flex: 1;
+                height: auto;
+                overflow: hidden;
+            }
+
+            body.keyboard-open .messages {
+                flex: 1;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            body.keyboard-open .message-input {
+                flex-shrink: 0;
+            }
+
+            /* Ensure input stays above keyboard */
+            body.keyboard-open .message-input input {
+                font-size: 16px; /* Prevents zoom on iOS */
+            }
+        }
+
+        /* Prevent zoom on input focus for iOS */
+        @media screen and (max-width: 768px) {
+            input[type="text"],
+            input[type="password"] {
+                font-size: 16px;
+            }
         }
 
         .chat-header {
@@ -624,15 +711,45 @@
             const USER_DATA_KEY = 'chatroom_user_data';
             const RECENT_CHATS_KEY = 'chatroom_recent_chats';
 
+            // In-memory storage fallback for WebView
+            let memoryStorage = {
+                userData: null,
+                recentChats: []
+            };
+
+            function isLocalStorageAvailable() {
+                try {
+                    const test = '__test__';
+                    localStorage.setItem(test, test);
+                    localStorage.removeItem(test);
+                    return true;
+                } catch (e) {
+                    return false;
+                }
+            }
+
+            const hasLocalStorage = isLocalStorageAvailable();
+
             function getUserData() {
-                const data = localStorage.getItem(USER_DATA_KEY);
-                return data ? JSON.parse(data) : { username: '', userId: generateUserId() };
+                if (hasLocalStorage) {
+                    const data = localStorage.getItem(USER_DATA_KEY);
+                    return data ? JSON.parse(data) : { username: '', userId: generateUserId() };
+                } else {
+                    if (!memoryStorage.userData) {
+                        memoryStorage.userData = { username: '', userId: generateUserId() };
+                    }
+                    return memoryStorage.userData;
+                }
             }
 
             function saveUserData(username) {
                 const userData = getUserData();
                 userData.username = username;
-                localStorage.setItem(USER_DATA_KEY, JSON.stringify(userData));
+                if (hasLocalStorage) {
+                    localStorage.setItem(USER_DATA_KEY, JSON.stringify(userData));
+                } else {
+                    memoryStorage.userData = userData;
+                }
             }
 
             function generateUserId() {
@@ -640,8 +757,12 @@
             }
 
             function getRecentChats() {
-                const chats = localStorage.getItem(RECENT_CHATS_KEY);
-                return chats ? JSON.parse(chats) : [];
+                if (hasLocalStorage) {
+                    const chats = localStorage.getItem(RECENT_CHATS_KEY);
+                    return chats ? JSON.parse(chats) : [];
+                } else {
+                    return memoryStorage.recentChats;
+                }
             }
 
             function saveRecentChat(code, username, hasPassword) {
@@ -654,7 +775,12 @@
                     timestamp: Date.now()
                 });
                 const limited = filtered.slice(0, 10);
-                localStorage.setItem(RECENT_CHATS_KEY, JSON.stringify(limited));
+                
+                if (hasLocalStorage) {
+                    localStorage.setItem(RECENT_CHATS_KEY, JSON.stringify(limited));
+                } else {
+                    memoryStorage.recentChats = limited;
+                }
             }
 
             function loadRecentChats() {
@@ -880,6 +1006,49 @@
                     document.getElementById('createUsername').value = userData.username;
                     document.getElementById('joinUsername').value = userData.username;
                 }
+
+                // Android keyboard detection using resize
+                let lastHeight = window.innerHeight;
+                window.addEventListener('resize', () => {
+                    const currentHeight = window.innerHeight;
+                    
+                    // Keyboard opened (screen got smaller)
+                    if (currentHeight < lastHeight) {
+                        document.body.classList.add('keyboard-open');
+                        setTimeout(() => {
+                            const messagesDiv = document.getElementById('messages');
+                            if (messagesDiv) {
+                                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                            }
+                        }, 100);
+                    } 
+                    // Keyboard closed (screen got bigger)
+                    else if (currentHeight > lastHeight) {
+                        document.body.classList.remove('keyboard-open');
+                    }
+                    
+                    lastHeight = currentHeight;
+                });
+
+                // Visual Viewport API for better keyboard detection (modern browsers)
+                if (window.visualViewport) {
+                    window.visualViewport.addEventListener('resize', () => {
+                        const viewportHeight = window.visualViewport.height;
+                        const windowHeight = window.innerHeight;
+                        
+                        if (viewportHeight < windowHeight * 0.75) {
+                            document.body.classList.add('keyboard-open');
+                            setTimeout(() => {
+                                const messagesDiv = document.getElementById('messages');
+                                if (messagesDiv) {
+                                    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                                }
+                            }, 100);
+                        } else {
+                            document.body.classList.remove('keyboard-open');
+                        }
+                    });
+                }
             });
 
             function showView(viewId) {
@@ -1094,6 +1263,39 @@
                         }
                     }
                 });
+
+                // Setup keyboard handlers when entering chat
+                setupKeyboardHandlers();
+            }
+
+            function setupKeyboardHandlers() {
+                const messageInput = document.getElementById('messageInput');
+                
+                if (!messageInput) return;
+
+                // Remove any existing listeners to avoid duplicates
+                messageInput.removeEventListener('focus', handleKeyboardOpen);
+                messageInput.removeEventListener('blur', handleKeyboardClose);
+
+                // iOS keyboard detection
+                messageInput.addEventListener('focus', handleKeyboardOpen);
+                messageInput.addEventListener('blur', handleKeyboardClose);
+            }
+
+            function handleKeyboardOpen() {
+                document.body.classList.add('keyboard-open');
+                setTimeout(() => {
+                    const messagesDiv = document.getElementById('messages');
+                    if (messagesDiv) {
+                        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                    }
+                }, 300);
+            }
+
+            function handleKeyboardClose() {
+                setTimeout(() => {
+                    document.body.classList.remove('keyboard-open');
+                }, 100);
             }
 
             function displaySystemMessage(message) {
