@@ -184,13 +184,16 @@
 
         /* Mobile keyboard adjustment */
         @media screen and (max-width: 768px) {
-            body {
-                height: 100vh;
+            html, body {
+                height: 100%;
                 overflow: hidden;
+                position: fixed;
+                width: 100%;
             }
 
             .container {
                 max-height: 100vh;
+                height: 100vh;
                 overflow: hidden;
             }
 
@@ -198,9 +201,16 @@
                 height: calc(100vh - 200px);
             }
 
-            body.keyboard-open {
-                height: 100vh;
-                overflow: hidden;
+            #chatView {
+                height: 100%;
+                display: flex;
+                flex-direction: column;
+            }
+
+            body.keyboard-open html,
+            body.keyboard-open body {
+                position: fixed;
+                width: 100%;
             }
 
             body.keyboard-open .container {
@@ -208,11 +218,10 @@
                 top: 0;
                 left: 0;
                 right: 0;
-                bottom: 0;
+                height: 100vh;
                 margin: 0;
                 border-radius: 0;
                 max-width: 100%;
-                max-height: 100vh;
                 display: flex;
                 flex-direction: column;
                 overflow: hidden;
@@ -220,7 +229,15 @@
 
             body.keyboard-open .header {
                 flex-shrink: 0;
-                padding: 15px;
+                padding: 10px;
+            }
+
+            body.keyboard-open .header h1 {
+                font-size: 20px;
+            }
+
+            body.keyboard-open .header p {
+                display: none;
             }
 
             body.keyboard-open .content {
@@ -229,6 +246,7 @@
                 padding: 0;
                 display: flex;
                 flex-direction: column;
+                min-height: 0;
             }
 
             body.keyboard-open #chatView {
@@ -236,27 +254,46 @@
                 display: flex;
                 flex-direction: column;
                 overflow: hidden;
+                min-height: 0;
             }
 
             body.keyboard-open .chat-container {
                 flex: 1;
-                height: auto;
+                height: 100%;
+                display: flex;
+                flex-direction: column;
                 overflow: hidden;
+                min-height: 0;
+            }
+
+            body.keyboard-open .chat-header {
+                flex-shrink: 0;
             }
 
             body.keyboard-open .messages {
                 flex: 1;
                 overflow-y: auto;
                 -webkit-overflow-scrolling: touch;
+                min-height: 0;
             }
 
             body.keyboard-open .message-input {
                 flex-shrink: 0;
+                position: relative;
+                z-index: 1000;
+                background: white;
             }
 
-            /* Ensure input stays above keyboard */
+            /* Force input to stay visible */
             body.keyboard-open .message-input input {
-                font-size: 16px; /* Prevents zoom on iOS */
+                font-size: 16px;
+            }
+
+            /* Additional spacing for keyboard */
+            body.keyboard-open .message-input::after {
+                content: '';
+                display: block;
+                height: env(safe-area-inset-bottom);
             }
         }
 
@@ -1009,25 +1046,32 @@
 
                 // Android keyboard detection using resize
                 let lastHeight = window.innerHeight;
+                let resizeTimeout;
+                
                 window.addEventListener('resize', () => {
-                    const currentHeight = window.innerHeight;
+                    clearTimeout(resizeTimeout);
                     
-                    // Keyboard opened (screen got smaller)
-                    if (currentHeight < lastHeight) {
-                        document.body.classList.add('keyboard-open');
-                        setTimeout(() => {
-                            const messagesDiv = document.getElementById('messages');
-                            if (messagesDiv) {
-                                messagesDiv.scrollTop = messagesDiv.scrollHeight;
-                            }
-                        }, 100);
-                    } 
-                    // Keyboard closed (screen got bigger)
-                    else if (currentHeight > lastHeight) {
-                        document.body.classList.remove('keyboard-open');
-                    }
-                    
-                    lastHeight = currentHeight;
+                    resizeTimeout = setTimeout(() => {
+                        const currentHeight = window.innerHeight;
+                        const heightDiff = lastHeight - currentHeight;
+                        
+                        // Keyboard opened (screen got significantly smaller)
+                        if (heightDiff > 150) {
+                            document.body.classList.add('keyboard-open');
+                            setTimeout(() => {
+                                const messagesDiv = document.getElementById('messages');
+                                if (messagesDiv) {
+                                    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                                }
+                            }, 100);
+                        } 
+                        // Keyboard closed (screen got bigger)
+                        else if (heightDiff < -150) {
+                            document.body.classList.remove('keyboard-open');
+                        }
+                        
+                        lastHeight = currentHeight;
+                    }, 100);
                 });
 
                 // Visual Viewport API for better keyboard detection (modern browsers)
@@ -1284,17 +1328,55 @@
 
             function handleKeyboardOpen() {
                 document.body.classList.add('keyboard-open');
+                document.documentElement.classList.add('keyboard-open');
+                
+                // Prevent body scroll
+                document.body.style.overflow = 'hidden';
+                document.documentElement.style.overflow = 'hidden';
+                
+                // Force layout recalculation and scroll
+                setTimeout(() => {
+                    const messagesDiv = document.getElementById('messages');
+                    const messageInput = document.getElementById('messageInput');
+                    const chatContainer = document.querySelector('.chat-container');
+                    
+                    if (messagesDiv) {
+                        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                    }
+                    
+                    // Ensure input is visible
+                    if (messageInput) {
+                        messageInput.focus();
+                        
+                        // Scroll the entire page to show input
+                        if (window.innerWidth <= 768) {
+                            window.scrollTo(0, 0);
+                            messageInput.scrollIntoView({ behavior: 'instant', block: 'end' });
+                        }
+                    }
+                }, 100);
+                
+                // Additional scroll after keyboard fully opens
                 setTimeout(() => {
                     const messagesDiv = document.getElementById('messages');
                     if (messagesDiv) {
                         messagesDiv.scrollTop = messagesDiv.scrollHeight;
                     }
-                }, 300);
+                    
+                    // Final positioning
+                    const messageInput = document.getElementById('messageInput');
+                    if (messageInput && window.innerWidth <= 768) {
+                        messageInput.scrollIntoView({ behavior: 'instant', block: 'end' });
+                    }
+                }, 400);
             }
 
             function handleKeyboardClose() {
                 setTimeout(() => {
                     document.body.classList.remove('keyboard-open');
+                    document.documentElement.classList.remove('keyboard-open');
+                    document.body.style.overflow = '';
+                    document.documentElement.style.overflow = '';
                 }, 100);
             }
 
